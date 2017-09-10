@@ -13,7 +13,7 @@
 #define LEPT_PARSE_STACK_INIT_SIZE 256
 #endif
 
-#define EXPECT(c, ch)       do { assert(*c->json == (ch)); c->json++; } while(0)
+#define EXPECT(c, ch)       do { assert(*(c)->json == (ch)); (c)->json++; } while(0)
 #define ISDIGIT(ch)         ((ch) >= '0' && (ch) <= '9')
 #define ISDIGIT1TO9(ch)     ((ch) >= '1' && (ch) <= '9')
 #define PUTC(c, ch)         do { *(char*)lept_context_push(c, sizeof(char)) = (ch); } while(0)
@@ -82,8 +82,8 @@ static int lept_parse_number(lept_context* c, lept_value* v) {
         for (p++; ISDIGIT(*p); p++);
     }
     errno = 0;
-    v->u.n = strtod(c->json, NULL);
-    if (errno == ERANGE && (v->u.n == HUGE_VAL || v->u.n == -HUGE_VAL))
+    v->n = strtod(c->json, NULL);
+    if (errno == ERANGE && (v->n == HUGE_VAL || v->n == -HUGE_VAL))
         return LEPT_PARSE_NUMBER_TOO_BIG;
     v->type = LEPT_NUMBER;
     c->json = p;
@@ -190,8 +190,8 @@ static int lept_parse_array(lept_context* c, lept_value* v) {
     if (*c->json == ']') {
         c->json++;
         v->type = LEPT_ARRAY;
-        v->u.a.size = 0;
-        v->u.a.e = NULL;
+        v->size = 0;
+        v->e = NULL;
         return LEPT_PARSE_OK;
     }
     for (;;) {
@@ -206,9 +206,9 @@ static int lept_parse_array(lept_context* c, lept_value* v) {
         else if (*c->json == ']') {
             c->json++;
             v->type = LEPT_ARRAY;
-            v->u.a.size = size;
+            v->size = size;
             size *= sizeof(lept_value);
-            memcpy(v->u.a.e = (lept_value*)malloc(size), lept_context_pop(c, size), size);
+            memcpy(v->e = (lept_value*)malloc(size), lept_context_pop(c, size), size);
             return LEPT_PARSE_OK;
         }
         else
@@ -252,7 +252,7 @@ int lept_parse(lept_value* v, const char* json) {
 void lept_free(lept_value* v) {
     assert(v != NULL);
     if (v->type == LEPT_STRING)
-        free(v->u.s.s);
+        free(v->s);
     v->type = LEPT_NULL;
 }
 
@@ -273,42 +273,42 @@ void lept_set_boolean(lept_value* v, int b) {
 
 double lept_get_number(const lept_value* v) {
     assert(v != NULL && v->type == LEPT_NUMBER);
-    return v->u.n;
+    return v->n;
 }
 
 void lept_set_number(lept_value* v, double n) {
     lept_free(v);
-    v->u.n = n;
+    v->n = n;
     v->type = LEPT_NUMBER;
 }
 
 const char* lept_get_string(const lept_value* v) {
     assert(v != NULL && v->type == LEPT_STRING);
-    return v->u.s.s;
+    return v->s;
 }
 
 size_t lept_get_string_length(const lept_value* v) {
     assert(v != NULL && v->type == LEPT_STRING);
-    return v->u.s.len;
+    return v->len;
 }
 
 void lept_set_string(lept_value* v, const char* s, size_t len) {
     assert(v != NULL && (s != NULL || len == 0));
     lept_free(v);
-    v->u.s.s = (char*)malloc(len + 1);
-    memcpy(v->u.s.s, s, len);
-    v->u.s.s[len] = '\0';
-    v->u.s.len = len;
+    v->s = (char*)malloc(len + 1);
+    memcpy(v->s, s, len);
+    v->s[len] = '\0';
+    v->len = len;
     v->type = LEPT_STRING;
 }
 
 size_t lept_get_array_size(const lept_value* v) {
     assert(v != NULL && v->type == LEPT_ARRAY);
-    return v->u.a.size;
+    return v->size;
 }
 
 lept_value* lept_get_array_element(const lept_value* v, size_t index) {
     assert(v != NULL && v->type == LEPT_ARRAY);
-    assert(index < v->u.a.size);
-    return &v->u.a.e[index];
+    assert(index < v->size)
+    return &v->e[index];
 }

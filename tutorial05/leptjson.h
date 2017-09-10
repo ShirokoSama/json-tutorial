@@ -9,10 +9,10 @@ typedef struct lept_value lept_value;
 
 struct lept_value {
     union {
-        struct { lept_value* e; size_t size; }a;    /* array:  elements, element count */
-        struct { char* s; size_t len; }s;           /* string: null-terminated string, string length */
+        struct { lept_value* e; size_t size; };    /* array:  elements, element count */
+        struct { char* s; size_t len; };           /* string: null-terminated string, string length */
         double n;                                   /* number */
-    }u;
+    };
     lept_type type;
 };
 
